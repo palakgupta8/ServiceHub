@@ -3,6 +3,7 @@ import '../models/service_category_model.dart';
 import '../models/service_model.dart';
 import '../models/review_model.dart';
 import '../models/service_provider_model.dart';
+import '../models/booking_model.dart';
 
 // All mock data lives here — one place to edit when connecting real API later
 // Every list is unmodifiable to prevent accidental mutation anywhere in the app
@@ -246,6 +247,54 @@ class MockData {
       subtitle: 'Professional salon services, now at home',
       backgroundColor: Color(0xFFE91E8C),
       icon: Icons.spa_rounded,
+    ),
+  ]);
+
+  // ── Mock Bookings (current user's booking history) ────────────────────
+  static final List<BookingModel> myBookings = List.unmodifiable([
+    const BookingModel(
+      id: 'b1',
+      serviceId: 's6',
+      serviceName: 'AC Service & Repair',
+      categoryName: 'AC Repair',
+      date: '8 Jun 2026',
+      timeSlot: '11:00 AM',
+      address: 'HSR Layout, Bangalore - 560102',
+      price: 449,
+      status: BookingStatus.upcoming,
+    ),
+    const BookingModel(
+      id: 'b2',
+      serviceId: 's1',
+      serviceName: 'Home Deep Cleaning',
+      categoryName: 'Cleaning',
+      date: '2 Jun 2026',
+      timeSlot: '9:00 AM',
+      address: 'HSR Layout, Bangalore - 560102',
+      price: 999,
+      status: BookingStatus.completed,
+    ),
+    const BookingModel(
+      id: 'b3',
+      serviceId: 's4',
+      serviceName: 'Haircut at Home',
+      categoryName: 'Beauty',
+      date: '28 May 2026',
+      timeSlot: '3:00 PM',
+      address: 'HSR Layout, Bangalore - 560102',
+      price: 299,
+      status: BookingStatus.completed,
+    ),
+    const BookingModel(
+      id: 'b4',
+      serviceId: 's2',
+      serviceName: 'Plumbing Repair',
+      categoryName: 'Plumbing',
+      date: '20 May 2026',
+      timeSlot: '12:00 PM',
+      address: 'HSR Layout, Bangalore - 560102',
+      price: 399,
+      status: BookingStatus.cancelled,
     ),
   ]);
 }
