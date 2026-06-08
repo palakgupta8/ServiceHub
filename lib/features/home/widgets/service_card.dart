@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../shared/models/service_model.dart';
+import '../../../shared/utils/category_utils.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/constants/app_constants.dart';
@@ -157,32 +158,6 @@ class ServiceCard extends StatelessWidget {
     );
   }
 
-  // Maps category ID → matching icon
-  IconData _iconForCategory(String categoryId) {
-    const map = {
-      'cleaning': Icons.cleaning_services_rounded,
-      'plumbing': Icons.plumbing_rounded,
-      'electrical': Icons.electrical_services_rounded,
-      'beauty': Icons.spa_rounded,
-      'painting': Icons.format_paint_rounded,
-      'ac_repair': Icons.ac_unit_rounded,
-      'carpentry': Icons.handyman_rounded,
-      'pest_control': Icons.pest_control_rounded,
-    };
-    return map[categoryId] ?? Icons.home_repair_service_rounded;
-  }
-
-  Color _iconColorForCategory(String categoryId) {
-    const map = {
-      'cleaning': Color(0xFF4F6AF5),
-      'plumbing': Color(0xFFFF6B6B),
-      'electrical': Color(0xFFFFB822),
-      'beauty': Color(0xFFE91E8C),
-      'painting': Color(0xFF7C4DFF),
-      'ac_repair': Color(0xFF00BCD4),
-      'carpentry': Color(0xFFFF9800),
-      'pest_control': Color(0xFF2DD36F),
-    };
-    return map[categoryId] ?? const Color(0xFF4F6AF5);
-  }
+  IconData _iconForCategory(String categoryId) => CategoryUtils.iconFor(categoryId);
+  Color _iconColorForCategory(String categoryId) => CategoryUtils.colorFor(categoryId);
 }

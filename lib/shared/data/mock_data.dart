@@ -4,6 +4,7 @@ import '../models/service_model.dart';
 import '../models/review_model.dart';
 import '../models/service_provider_model.dart';
 import '../models/booking_model.dart';
+import '../models/coupon_model.dart';
 
 // All mock data lives here — one place to edit when connecting real API later
 // Every list is unmodifiable to prevent accidental mutation anywhere in the app
@@ -249,6 +250,61 @@ class MockData {
       icon: Icons.spa_rounded,
     ),
   ]);
+
+  // ── Coupons ───────────────────────────────────────────────────────────
+  static final List<CouponModel> coupons = List.unmodifiable([
+    const CouponModel(
+      code: 'SAVE10',
+      type: CouponType.percentage,
+      value: 10,
+      description: '10% off on any service',
+    ),
+    const CouponModel(
+      code: 'FIRST50',
+      type: CouponType.fixedAmount,
+      value: 50,
+      description: '₹50 off on your booking',
+    ),
+    const CouponModel(
+      code: 'CLEAN20',
+      type: CouponType.percentage,
+      value: 20,
+      categoryId: 'cleaning',
+      description: '20% off on Cleaning services',
+    ),
+    const CouponModel(
+      code: 'SUMMER30',
+      type: CouponType.percentage,
+      value: 30,
+      categoryId: 'ac_repair',
+      description: '30% off on AC Repair',
+    ),
+  ]);
+
+  // Validate a coupon code against a service categoryId
+  // Returns the CouponModel if valid, or a String error message if not
+  static Object validateCoupon(String code, String serviceCategoryId) {
+    // Find coupon (case-insensitive so SAVE10 = save10)
+    final CouponModel? coupon = coupons.cast<CouponModel?>().firstWhere(
+      (c) => c!.code.toUpperCase() == code.toUpperCase(),
+      orElse: () => null,
+    );
+
+    if (coupon == null) return 'Invalid coupon code';
+
+    // Check category restriction
+    if (coupon.categoryId != null &&
+        coupon.categoryId != serviceCategoryId) {
+      // Find the readable category name
+      final category = categories.firstWhere(
+        (c) => c.id == coupon.categoryId,
+        orElse: () => categories.first,
+      );
+      return 'This coupon is valid for ${category.name} services only';
+    }
+
+    return coupon; // success — returns the CouponModel itself
+  }
 
   // ── Mock Bookings (current user's booking history) ────────────────────
   static final List<BookingModel> myBookings = List.unmodifiable([

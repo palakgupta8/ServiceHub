@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/router/app_router.dart';
 import '../profile/profile_screen.dart';
+import '../bookings/bookings_tab.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/constants/app_constants.dart';
@@ -11,6 +13,7 @@ import 'widgets/promo_banner.dart';
 import 'widgets/category_section.dart';
 import 'widgets/service_card.dart';
 import 'widgets/section_header.dart';
+import '../../shared/widgets/shimmer_widgets.dart';
 
 // ConsumerStatefulWidget = StatefulWidget + Riverpod support
 // Use this when you need both lifecycle methods (initState/dispose) AND providers
@@ -26,14 +29,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   int _selectedNavIndex = 0; // which bottom nav tab is active
 
   void _onCategoryTapped(ServiceCategoryModel category) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${category.name} selected'),
-        duration: const Duration(seconds: 1),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-    // TODO: navigate to category services screen
+    context.push('/category/${category.id}', extra: category.name);
   }
 
   @override
@@ -90,7 +86,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 }
 
 // ── Home Tab ────────────────────────────────────────────────────────────────
-class _HomeTab extends StatelessWidget {
+class _HomeTab extends ConsumerWidget {
   final List categories;
   final List services;
   final void Function(ServiceCategoryModel) onCategoryTapped;
@@ -102,8 +98,21 @@ class _HomeTab extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    return CustomScrollView(
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Watch homeDataProvider — triggers shimmer on first load
+    final homeData = ref.watch(homeDataProvider);
+
+    return homeData.when(
+      // While loading: show shimmer skeleton
+      loading: () => const CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(child: HomeScreenShimmer()),
+        ],
+      ),
+      // On error: show simple message (rare with mock data)
+      error: (_, __) => const Center(child: Text('Something went wrong')),
+      // On success: show real content
+      data: (_) => CustomScrollView(
       // CustomScrollView + Slivers: the Flutter way to build complex scrollable UIs
       // Better than SingleChildScrollView + Column because:
       //   - SliverAppBar can collapse/expand as you scroll
@@ -120,7 +129,7 @@ class _HomeTab extends StatelessWidget {
           actions: [_buildNotificationButton()],
           bottom: PreferredSize(
             preferredSize: const Size.fromHeight(64),
-            child: _buildSearchBar(),
+            child: _buildSearchBar(context),
           ),
         ),
 
@@ -188,7 +197,8 @@ class _HomeTab extends StatelessWidget {
           ),
         ),
       ],
-    );
+    ),  // end of CustomScrollView — data: named param value ends here
+    );  // end of homeData.when()
   }
 
   Widget _buildAppBarTitle() {
@@ -253,14 +263,12 @@ class _HomeTab extends StatelessWidget {
     );
   }
 
-  Widget _buildSearchBar() {
+  Widget _buildSearchBar(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
       child: TextField(
-        readOnly: true, // tapping navigates to a search screen (not editable inline)
-        onTap: () {
-          // TODO: navigate to search screen
-        },
+        readOnly: true,
+        onTap: () => context.push(AppRoutes.search),
         decoration: InputDecoration(
           hintText: 'Search for services...',
           prefixIcon: const Icon(Icons.search_rounded,
@@ -291,9 +299,7 @@ class _BookingsTab extends StatelessWidget {
   const _BookingsTab();
 
   @override
-  Widget build(BuildContext context) {
-    return const Center(child: Text('My Bookings — coming soon'));
-  }
+  Widget build(BuildContext context) => const BookingsTab();
 }
 
 class _ProfileTab extends StatelessWidget {

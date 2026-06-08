@@ -7,6 +7,8 @@ import '../../features/home/home_screen.dart';
 import '../../features/service_detail/service_detail_screen.dart';
 import '../../features/booking/booking_screen.dart';
 import '../../features/booking/booking_success_screen.dart';
+import '../../features/search/search_screen.dart';
+import '../../features/category/category_screen.dart';
 
 class AppRoutes {
   AppRoutes._();
@@ -19,6 +21,8 @@ class AppRoutes {
   static const String serviceDetail   = '/service/:id';
   static const String booking         = '/booking';
   static const String bookingSuccess  = '/booking/success';
+  static const String search          = '/search';
+  static const String category        = '/category/:id';
   static const String profile         = '/profile';
 }
 
@@ -70,6 +74,18 @@ final GoRouter appRouter = GoRouter(
       path: AppRoutes.bookingSuccess,
       pageBuilder: (context, state) =>
           const NoTransitionPage(child: BookingSuccessScreen()),
+    ),
+    GoRoute(
+      path: AppRoutes.search,
+      builder: (context, state) => const SearchScreen(),
+    ),
+    GoRoute(
+      path: AppRoutes.category,
+      builder: (context, state) {
+        final id = state.pathParameters['id']!;
+        final name = (state.extra as String?) ?? id;
+        return CategoryScreen(categoryId: id, categoryName: name);
+      },
     ),
   ],
 );

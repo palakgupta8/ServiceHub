@@ -3,7 +3,9 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../shared/models/service_model.dart';
+import '../../../shared/models/coupon_model.dart';
 import 'address_step.dart';
+import 'coupon_input.dart';
 
 class ReviewStep extends StatelessWidget {
   final ServiceModel service;
@@ -15,6 +17,9 @@ class ReviewStep extends StatelessWidget {
   final String city;
   final String pincode;
   final AddressType addressType;
+  final CouponModel? appliedCoupon;
+  final void Function(CouponModel) onCouponApplied;
+  final VoidCallback onCouponRemoved;
 
   const ReviewStep({
     super.key,
@@ -27,6 +32,9 @@ class ReviewStep extends StatelessWidget {
     required this.city,
     required this.pincode,
     required this.addressType,
+    this.appliedCoupon,
+    required this.onCouponApplied,
+    required this.onCouponRemoved,
   });
 
   @override
@@ -89,30 +97,20 @@ class ReviewStep extends StatelessWidget {
 
           const SizedBox(height: 14),
 
-          // ── Price breakdown ──────────────────────────────────────────
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Column(
-              children: [
-                _priceRow('Service Charge', service.formattedPrice),
-                const SizedBox(height: 10),
-                _priceRow('Platform Fee', '₹0'),
-                const SizedBox(height: 10),
-                const Divider(),
-                const SizedBox(height: 10),
-                _priceRow(
-                  'Total Amount',
-                  service.formattedPrice,
-                  isTotal: true,
-                ),
-              ],
-            ),
+          // ── Coupon code input ────────────────────────────────────────
+          Text('Coupon Code', style: AppTextStyles.headingMedium),
+          const SizedBox(height: 12),
+          CouponInput(
+            serviceCategoryId: service.categoryId,
+            appliedCoupon: appliedCoupon,
+            onApplied: onCouponApplied,
+            onRemoved: onCouponRemoved,
           ),
+
+          const SizedBox(height: 20),
+
+          // ── Price breakdown (updates live when coupon applied) ───────
+          _buildPriceBreakdown(),
 
           const SizedBox(height: 16),
 
@@ -147,7 +145,50 @@ class ReviewStep extends StatelessWidget {
     );
   }
 
-  Widget _priceRow(String label, String value, {bool isTotal = false}) {
+  Widget _buildPriceBreakdown() {
+    final double discount = appliedCoupon?.discountAmount(service.price) ?? 0;
+    final double total = service.price - discount;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        children: [
+          _priceRow('Service Charge', service.formattedPrice),
+          const SizedBox(height: 10),
+          _priceRow('Platform Fee', '₹0'),
+
+          // Discount row — only shown when coupon is applied
+          if (appliedCoupon != null) ...[
+            const SizedBox(height: 10),
+            // AnimatedOpacity: discount row fades in when coupon is applied
+            _priceRow(
+              appliedCoupon!.discountLabel(),
+              '-₹${discount.toStringAsFixed(0)}',
+              isDiscount: true,
+            ),
+          ],
+
+          const SizedBox(height: 10),
+          const Divider(),
+          const SizedBox(height: 10),
+
+          _priceRow(
+            'Total Amount',
+            '₹${total.toStringAsFixed(0)}',
+            isTotal: true,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _priceRow(String label, String value,
+      {bool isTotal = false, bool isDiscount = false}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -155,13 +196,19 @@ class ReviewStep extends StatelessWidget {
           label,
           style: isTotal
               ? AppTextStyles.headingSmall
-              : AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+              : AppTextStyles.bodyMedium.copyWith(
+                  color: isDiscount
+                      ? AppColors.success
+                      : AppColors.textSecondary),
         ),
         Text(
           value,
           style: isTotal
               ? AppTextStyles.price
-              : AppTextStyles.bodyMedium,
+              : AppTextStyles.bodyMedium.copyWith(
+                  color: isDiscount ? AppColors.success : AppColors.textPrimary,
+                  fontWeight:
+                      isDiscount ? FontWeight.w600 : FontWeight.w400),
         ),
       ],
     );

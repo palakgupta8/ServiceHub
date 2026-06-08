@@ -6,6 +6,7 @@ import '../../core/theme/app_text_styles.dart';
 import '../../core/constants/app_constants.dart';
 import '../../shared/data/mock_data.dart';
 import '../../shared/models/service_model.dart';
+import '../../shared/models/coupon_model.dart';
 import 'widgets/step_indicator.dart';
 import 'widgets/date_time_step.dart';
 import 'widgets/address_step.dart';
@@ -38,6 +39,9 @@ class _BookingScreenState extends State<BookingScreen> {
   final _cityController = TextEditingController();
   final _pincodeController = TextEditingController();
   AddressType _addressType = AddressType.home;
+
+  // ── Coupon state ───────────────────────────────────────────────────────
+  CouponModel? _appliedCoupon;
 
   // ── Loading state ──────────────────────────────────────────────────────
   bool _isConfirming = false;
@@ -158,7 +162,7 @@ class _BookingScreenState extends State<BookingScreen> {
           ),
 
           // ── Bottom action button ─────────────────────────────────────
-          _buildBottomButton(),
+          _buildBottomButton(service),
         ],
       ),
     );
@@ -202,13 +206,23 @@ class _BookingScreenState extends State<BookingScreen> {
           city: _cityController.text,
           pincode: _pincodeController.text,
           addressType: _addressType,
+          appliedCoupon: _appliedCoupon,
+          onCouponApplied: (coupon) => setState(() => _appliedCoupon = coupon),
+          onCouponRemoved: () => setState(() => _appliedCoupon = null),
         );
       default:
         return const SizedBox.shrink();
     }
   }
 
-  Widget _buildBottomButton() {
+  String _buildButtonLabel(bool isLastStep, ServiceModel service) {
+    if (!isLastStep) return 'Next';
+    if (_appliedCoupon == null) return 'Confirm Booking — ${service.formattedPrice}';
+    final total = _appliedCoupon!.finalPrice(service.price);
+    return 'Confirm Booking — ₹${total.toStringAsFixed(0)}';
+  }
+
+  Widget _buildBottomButton(ServiceModel service) {
     final bool isLastStep = _currentStep == _totalSteps - 1;
 
     return Container(
@@ -227,7 +241,7 @@ class _BookingScreenState extends State<BookingScreen> {
                 child: CircularProgressIndicator(
                     strokeWidth: 2.5, color: Colors.white),
               )
-            : Text(isLastStep ? 'Confirm Booking' : 'Next'),
+            : Text(_buildButtonLabel(isLastStep, service)),
       ),
     );
   }
