@@ -135,10 +135,8 @@ class _BookingSuccessScreenState extends State<BookingSuccessScreen>
                     ),
                     const SizedBox(height: 12),
                     OutlinedButton(
-                      onPressed: () {
-                        // TODO: navigate to bookings tab
-                        context.go(AppRoutes.home);
-                      },
+                      // extra: 1 opens HomeScreen on the Bookings tab directly
+                      onPressed: () => context.go(AppRoutes.home, extra: 1),
                       child: const Text('View My Bookings'),
                     ),
                   ],

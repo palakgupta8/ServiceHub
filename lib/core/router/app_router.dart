@@ -51,8 +51,11 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(
       path: AppRoutes.home,
-      pageBuilder: (context, state) =>
-          const NoTransitionPage(child: HomeScreen()),
+      pageBuilder: (context, state) {
+        // extra carries the initial tab index (0=Home, 1=Bookings, 2=Profile)
+        final tab = (state.extra as int?) ?? 0;
+        return NoTransitionPage(child: HomeScreen(initialTabIndex: tab));
+      },
     ),
     GoRoute(
       path: AppRoutes.serviceDetail,

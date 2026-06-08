@@ -19,14 +19,23 @@ import '../../shared/widgets/shimmer_widgets.dart';
 // Use this when you need both lifecycle methods (initState/dispose) AND providers
 // For screens that only need providers (no lifecycle), use ConsumerWidget
 class HomeScreen extends ConsumerStatefulWidget {
-  const HomeScreen({super.key});
+  // initialTabIndex: lets callers (e.g. booking success screen) open a specific tab
+  final int initialTabIndex;
+
+  const HomeScreen({super.key, this.initialTabIndex = 0});
 
   @override
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  int _selectedNavIndex = 0; // which bottom nav tab is active
+  late int _selectedNavIndex; // which bottom nav tab is active
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedNavIndex = widget.initialTabIndex;
+  }
 
   void _onCategoryTapped(ServiceCategoryModel category) {
     context.push('/category/${category.id}', extra: category.name);
@@ -112,12 +121,22 @@ class _HomeTab extends ConsumerWidget {
       // On error: show simple message (rare with mock data)
       error: (_, __) => const Center(child: Text('Something went wrong')),
       // On success: show real content
-      data: (_) => CustomScrollView(
-      // CustomScrollView + Slivers: the Flutter way to build complex scrollable UIs
-      // Better than SingleChildScrollView + Column because:
-      //   - SliverAppBar can collapse/expand as you scroll
-      //   - Slivers are lazy — only render what's visible = better performance
-      slivers: [
+      data: (_) => RefreshIndicator(
+        // Pull-to-refresh: invalidates the provider → triggers shimmer → reloads
+        onRefresh: () async {
+          ref.invalidate(homeDataProvider);
+          await ref.read(homeDataProvider.future);
+        },
+        color: AppColors.primary,
+        child: CustomScrollView(
+        // AlwaysScrollableScrollPhysics ensures pull-to-refresh fires even when
+        // content is shorter than the screen (no natural over-scroll otherwise)
+        physics: const AlwaysScrollableScrollPhysics(),
+        // CustomScrollView + Slivers: the Flutter way to build complex scrollable UIs
+        // Better than SingleChildScrollView + Column because:
+        //   - SliverAppBar can collapse/expand as you scroll
+        //   - Slivers are lazy — only render what's visible = better performance
+        slivers: [
         // ── Sticky AppBar ───────────────────────────────────────────────
         SliverAppBar(
           floating: true,     // shows appbar when scrolling up (even mid-scroll)
@@ -197,7 +216,8 @@ class _HomeTab extends ConsumerWidget {
           ),
         ),
       ],
-    ),  // end of CustomScrollView — data: named param value ends here
+    ),  // end of CustomScrollView
+      ),  // end of RefreshIndicator — data: named param value ends here
     );  // end of homeData.when()
   }
 

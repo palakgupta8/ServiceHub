@@ -3,7 +3,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 
 class StepIndicator extends StatelessWidget {
-  final int currentStep; // 0-based: 0, 1, or 2
+  final int currentStep; // 0-based: 0, 1, 2, or 3
   final int totalSteps;
 
   const StepIndicator({
@@ -12,7 +12,7 @@ class StepIndicator extends StatelessWidget {
     required this.totalSteps,
   });
 
-  static const _labels = ['Date & Time', 'Address', 'Review'];
+  static const _labels = ['Date & Time', 'Address', 'Review', 'Payment'];
 
   @override
   Widget build(BuildContext context) {

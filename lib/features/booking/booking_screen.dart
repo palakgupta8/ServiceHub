@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/router/app_router.dart';
 import '../../core/theme/app_colors.dart';
@@ -11,6 +12,7 @@ import 'widgets/step_indicator.dart';
 import 'widgets/date_time_step.dart';
 import 'widgets/address_step.dart';
 import 'widgets/review_step.dart';
+import 'widgets/payment_step.dart';
 
 class BookingScreen extends StatefulWidget {
   final String serviceId;
@@ -24,7 +26,10 @@ class BookingScreen extends StatefulWidget {
 class _BookingScreenState extends State<BookingScreen> {
   // ── Step tracking ──────────────────────────────────────────────────────
   int _currentStep = 0;
-  static const int _totalSteps = 3;
+  static const int _totalSteps = 4;
+
+  // ── Step 3 state ───────────────────────────────────────────────────────
+  PaymentMethod _selectedPaymentMethod = PaymentMethod.upi;
 
   // ── Step 1 state ───────────────────────────────────────────────────────
   DateTime? _selectedDate;
@@ -76,11 +81,13 @@ class _BookingScreenState extends State<BookingScreen> {
       if (!_addressFormKey.currentState!.validate()) return;
     }
 
-    if (_currentStep == 2) {
+    if (_currentStep == 3) {
       _confirmBooking();
       return;
     }
 
+    // Haptic tap when advancing steps
+    HapticFeedback.lightImpact();
     // Advance to next step with animation
     setState(() => _currentStep++);
   }
@@ -210,6 +217,15 @@ class _BookingScreenState extends State<BookingScreen> {
           onCouponApplied: (coupon) => setState(() => _appliedCoupon = coupon),
           onCouponRemoved: () => setState(() => _appliedCoupon = null),
         );
+      case 3:
+        return PaymentStep(
+          key: const ValueKey(3),
+          service: service,
+          appliedCoupon: _appliedCoupon,
+          selectedMethod: _selectedPaymentMethod,
+          onMethodSelected: (method) =>
+              setState(() => _selectedPaymentMethod = method),
+        );
       default:
         return const SizedBox.shrink();
     }
@@ -217,9 +233,10 @@ class _BookingScreenState extends State<BookingScreen> {
 
   String _buildButtonLabel(bool isLastStep, ServiceModel service) {
     if (!isLastStep) return 'Next';
-    if (_appliedCoupon == null) return 'Confirm Booking — ${service.formattedPrice}';
-    final total = _appliedCoupon!.finalPrice(service.price);
-    return 'Confirm Booking — ₹${total.toStringAsFixed(0)}';
+    // Last step is payment — show total amount on the Pay button
+    final double total =
+        _appliedCoupon?.finalPrice(service.price) ?? service.price;
+    return 'Pay Now — ₹${total.toStringAsFixed(0)}';
   }
 
   Widget _buildBottomButton(ServiceModel service) {

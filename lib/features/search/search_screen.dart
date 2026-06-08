@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../shared/data/mock_data.dart';
 import '../../shared/models/service_model.dart';
 import '../../shared/utils/category_utils.dart';
@@ -27,11 +28,17 @@ class _SearchScreenState extends State<SearchScreen> {
   // We distinguish null (no query) from empty list (query but no matches)
   List<ServiceModel>? _results;
 
+  // Recent search history — max 5 entries, stored in SharedPreferences
+  List<String> _history = [];
+
+  static const _historyKey = 'search_history';
+
   @override
   void initState() {
     super.initState();
     // addListener: fires every time the text changes — live search
     _controller.addListener(_onQueryChanged);
+    _loadHistory();
   }
 
   @override
@@ -39,6 +46,35 @@ class _SearchScreenState extends State<SearchScreen> {
     _controller.removeListener(_onQueryChanged);
     _controller.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _history = prefs.getStringList(_historyKey) ?? [];
+    });
+  }
+
+  Future<void> _saveToHistory(String term) async {
+    final trimmed = term.trim();
+    if (trimmed.isEmpty) return;
+    // Remove duplicate if exists, then prepend — max 5 entries
+    final updated = [
+      trimmed,
+      ..._history.where((h) => h.toLowerCase() != trimmed.toLowerCase()),
+    ].take(5).toList();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_historyKey, updated);
+    if (!mounted) return;
+    setState(() => _history = updated);
+  }
+
+  Future<void> _clearHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_historyKey);
+    if (!mounted) return;
+    setState(() => _history = []);
   }
 
   void _onQueryChanged() {
@@ -86,6 +122,8 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
           style: AppTextStyles.bodyMedium,
           textInputAction: TextInputAction.search,
+          // Save to history when user submits the search query
+          onSubmitted: (value) => _saveToHistory(value),
         ),
         // Clear button — only shows when there's text
         actions: [
@@ -109,11 +147,66 @@ class _SearchScreenState extends State<SearchScreen> {
 
   // ── Suggestions (shown before typing) ─────────────────────────────────
   Widget _buildSuggestions() {
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(AppConstants.paddingM),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ── Recent searches (only shown when history exists) ───────────
+          if (_history.isNotEmpty) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Recent Searches', style: AppTextStyles.headingSmall),
+                GestureDetector(
+                  onTap: _clearHistory,
+                  child: Text(
+                    'Clear',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: _history.map((s) {
+                return GestureDetector(
+                  onTap: () => _controller.text = s,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryLight,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                          color: AppColors.primary.withValues(alpha: 0.2)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.history_rounded,
+                            size: 14, color: AppColors.primary),
+                        const SizedBox(width: 6),
+                        Text(
+                          s,
+                          style: AppTextStyles.labelSmall
+                              .copyWith(color: AppColors.primary),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 24),
+          ],
+
+          // ── Popular searches ───────────────────────────────────────────
           Text('Popular Searches', style: AppTextStyles.headingSmall),
           const SizedBox(height: 14),
 
@@ -123,8 +216,11 @@ class _SearchScreenState extends State<SearchScreen> {
             runSpacing: 10,
             children: _suggestions.map((s) {
               return GestureDetector(
-                onTap: () => _controller.text = s,
-                // setting .text triggers listener → live search fires
+                onTap: () {
+                  _saveToHistory(s);
+                  _controller.text = s;
+                  // setting .text triggers listener → live search fires
+                },
                 child: Container(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 16, vertical: 10),
@@ -174,7 +270,10 @@ class _SearchScreenState extends State<SearchScreen> {
               return _SearchResultTile(
                 service: service,
                 query: _controller.text.trim(),
-                onTap: () => context.push('/service/${service.id}'),
+                onTap: () {
+                                  _saveToHistory(_controller.text.trim());
+                                  context.push('/service/${service.id}');
+                                },
               );
             },
           ),
